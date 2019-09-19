@@ -1,0 +1,19 @@
+### trimming the text
+
+df3$activity_name<-str_trim(df3$activity_name, side=c('both'))
+
+### tRemove alphanumeric
+
+df3$activity_name<-gsub("[^[:alnum:]' ]", "", df3$activity_name)
+
+### tRemove words with more that 3 characters
+
+df3$activity_name<-gsub('\\b\\w{1,3}\\b','', df3$activity_name)
+
+### tRemove white spaces within sentence
+
+df3$activity_name<-gsub('"\\s+"','', df3$activity_name)
+
+### tRemove all numbers###
+
+df3$activity_name<-gsub('[0-9]+','', df3$activity_name)
