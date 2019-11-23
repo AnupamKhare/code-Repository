@@ -1,3 +1,367 @@
 #########
 
 dataset.head(5).transpose()
+
+#### Plotting categorical columns with Unique values
+
+#Define a dataframe that will hold the plot values
+
+df_cat = pandas.DataFrame(columns=['attribute',
+                            'num_unique_values','unique_values'])
+df_cat['num_unique_values'] = df_cat['num_unique_values'].astype(int)
+
+#populate the dataframe with the non numeric attributes and 
+#the number of unique values 
+row = 0
+df_nonnumeric = dataset.select_dtypes(exclude=NUMERICS)
+#Get the list of possible categorical columns
+categorical_cols = df_nonnumeric.columns
+
+for col in categorical_cols:                                   
+        df_cat.loc[row] = [col,len(dataset[col].unique()),
+                           dataset[col].unique()]
+        row = row+1
+        
+layout = go.Layout(
+    autosize=False,    
+    height=2000,  
+    font=dict(family=CODE_FONT),
+    xaxis=dict(
+        title='Number of unique values',
+        titlefont=dict(     
+            family=TEXT_FONT,
+            size=16,
+            color=COLOR
+        ),        
+    ),
+    yaxis=dict(
+        title='Attribute',
+        titlefont=dict(  
+            family=TEXT_FONT,         
+            size=16,
+            color=COLOR 
+        ),             
+    ),    
+    annotations=[
+        dict(x=xi,y=yi,
+             text=str(xi),
+             xanchor='left',
+             yanchor='center',
+             showarrow=False,
+        ) for xi, yi in zip(df_cat['num_unique_values'], 
+                df_cat['attribute'])]
+)
+ 
+data = [
+    go.Bar(
+        y=df_cat['attribute'], 
+        x=df_cat['num_unique_values'],
+        orientation = 'h',
+        marker = dict(   
+        color=COLOR,            
+        line = dict(
+            color = SECONDARY_COLOR,
+            width = 1)
+    )
+    )
+]
+
+fig = go.Figure(data=data,layout=layout)
+offline.iplot(fig,show_link=False)
+
+#################### add columns to dataset with various conditions 
+
+# Add a column False Positive comments to test dataset
+def FP_com(test):
+    if test['HitANDRun'] == 1:
+        return 'HitANDRun'
+    elif test['MedPaySubroElig'] == 0 and ['PIPSubroElig'] == 0 and test['InsuredBILoss'] == 0 and \
+            test['InsuredVehicleLoss'] == 0 and test['InsuredPIPLoss'] == 1 and test['InsuredMedPayLoss'] == 1:
+        return 'MPandPIPIneligible'
+    elif test['MedPaySubroElig'] == 0 and test['InsuredBILoss'] == 0 and test['InsuredVehicleLoss'] == 0 and \
+                test['InsuredPIPLoss'] == 0 and test['InsuredMedPayLoss'] == 1:
+        return 'MedPayIneligible'
+    elif test['PIPSubroElig'] == 0 and test['InsuredBILoss'] == 0 and test['InsuredVehicleLoss']== 0 and  \
+                test['InsuredPIPLoss'] == 1 and test['InsuredMedPayLoss'] == 0:
+        return 'PIPIneligible'
+    else:
+        return None
+        
+test['Comment'] = test.apply(FP_com, axis=1)
+
+
+########################################## Creating dummy python way creates 1,0##########
+
+# Discretize General Notes Count
+    dis_list = ["Num_AdverseParties", "Num_ThirdParty_Vehicles", "GenNotesCount"]
+    for i in dis_list:
+        i_cat = i + "_cat"
+        test[i_cat]=test[i].apply(lambda x: 1 if x>0 else 0)
+        
+######################### Columsn exist in train and vice versa#######
+
+# Columns that do not exist in Test
+    main_lst_train = []
+    main_lst_test = []
+    for i in varlist:
+        tr_uniq = []
+        tst_uniq = []
+        tr_arr = train[i].unique()
+        tr_uniq.append(tr_arr.tolist())
+        tst_arr = test[i].unique()
+        tst_uniq.append(tst_arr.tolist())
+        # Columns not in Test but in Train
+        try:
+            for p in range(len(tr_uniq[0])):
+                if tr_uniq[0][p] not in tst_uniq[0]:   
+                    if tr_uniq[0][p] is np.nan:
+                        pass
+                    else:
+                        ap = tr_uniq[0][p]
+                        ap = i + '_' + str(ap)
+                        main_lst_train.append(ap)
+        except:
+            pass
+
+        # COlumns not in Train but in Test
+        try:
+            for p in range(len(tst_uniq[0])):
+                if tst_uniq[0][p] not in tr_uniq[0]:   
+                    if tst_uniq[0][p] is np.nan:
+                        pass
+                    else:
+                        ap = tst_uniq[0][p]
+                        ap = i + '_' + str(ap)
+                        main_lst_test.append(ap)
+        except:
+            pass
+
+    if len(main_lst_train) > 0:
+        for i in main_lst_train:
+            try:
+                X_test[i] = 0
+            except:
+                pass
+    if len(main_lst_test) > 0:
+        for i in main_lst_test:
+            try:
+                X_test.drop(i, axis=1, inplace=True)
+            except:
+                pass
+
+############ Creating new column based on condition########
+
+cp=[]
+for i in test.ClosedWithOutPay:
+    if i==False:
+        cp.append(0)
+    if i==True:
+        cp.append(1)
+test['ClosedWithOutPay']=cp
+
+############ substituting and creating new columns
+
+Data.loc[Data.RecoverySubrogationTotal >0, 'PositiveOutcome'] =1
+Data.loc[Data.RecoverySubrogationTotal<=0, 'PositiveOutcome'] =0
+
+######################### cleaning text data#########
+
+Data["lower"]=Data.LossDescription.str.lower().str.split()
+Data["lower"]=Data.lower.apply(lambda x: [re.sub(r'[0-9]+',r'',item) for item in x ])
+Data["lower"]=Data['lower'].apply(lambda x: [re.sub(r'[^a-zA-Z0-9 ]',r' ',item) for item in x ])
+
+########### substituting values within a column
+
+for i in range(len(Data.LossDescription)):
+    if type(Data.LossDescription[i])== float:
+        Data.LossDescription[i]= ''
+
+# this code will tell what are matching and non matching rows in merge
+pd.merge(df1, df2, on='A',how='left', indicator=True)
+
+
+# creating new variable three methods
+
+np.where(df['age'] <= 9, 'child', df['sex'])
+df['sex'].where(df['age'] > 9, 'child')
+df.apply(lambda x: 'child' if x['age'] <= 9 else x['sex'], axis=1)
+
+
+#only selecting rows which (based on column) which not present in def and present in abc
+
+abc[~abc.x1.isin(def.x1)]
+
+#only selecting rows which (based on column) which are present in def and present in abc
+
+abc[abc.x1.isin(def.x1)]
+
+# filter rows
+
+df.query('a > b')
+
+# conditions in Pandas
+
+C = np.where(cond, A, B) if true then A else B
+
+
+#If you have more than one condition, then you could use np.select instead. 
+For example, if you wish df['que'] to equal df['two'] when df['one'] < df['two'], then
+
+conditions = [
+    (df['one'] >= df['two']) & (df['one'] <= df['three']), 
+    df['one'] < df['two']]
+
+choices = [df['one'], df['two']]
+
+df['que'] = np.select(conditions, choices, default=np.nan)
+
+#Creating timestamp for today
+
+timestamp = ('{:%Y_%m_%d_%H_%M_%S}'.format(datetime.datetime.now()))
+
+#Creating timestamp for n days from today 
+
+timestamp_Yesterday='{:%Y_%m_%d}'.format((datetime.datetime.now()) - (datetime.timedelta(days=n))) # put the number of days in n
+
+#selecting columns based on datatype
+
+df.select_dtypes(include=['int'])
+ df.select_dtypes(include=[np.number])
+df.select_dtypes(exclude=[object])
+
+#if else in a list comprehension
+
+
+
+# List unique values in a DataFrame column
+pd.unique(df.column_name.ravel())
+
+# Convert Series datatype to numeric, getting rid of any non-numeric values
+df['col'] = df['col'].astype(str).convert_objects(convert_numeric=True)
+
+# Grab DataFrame rows where column has certain values
+valuelist = ['value1', 'value2', 'value3']
+df = df[df.column.isin(valuelist)]
+
+# Grab DataFrame rows where column doesn't have certain values
+valuelist = ['value1', 'value2', 'value3']
+df = df[~df.column.isin(value_list)]
+
+# Delete column from DataFrame
+del df['column']
+
+# Select from DataFrame using criteria from multiple columns
+# (use `|` instead of `&` to do an OR)
+newdf = df[(df['column_one']>2004) & (df['column_two']==9)]
+
+# Rename several DataFrame columns
+df = df.rename(columns = {
+    'col1 old name':'col1 new name',
+    'col2 old name':'col2 new name',
+    'col3 old name':'col3 new name',
+})
+
+# Lower-case all DataFrame column names
+df.columns = map(str.lower, df.columns)
+
+# Even more fancy DataFrame column re-naming
+# lower-case all DataFrame column names (for example)
+df.rename(columns=lambda x: x.split('.')[-1], inplace=True)
+
+# Loop through rows in a DataFrame
+# (if you must)
+for index, row in df.iterrows():
+    print index, row['some column']  
+
+# Next few examples show how to work with text data in Pandas.
+# Full list of .str functions: http://pandas.pydata.org/pandas-docs/stable/text.html
+
+# Slice values in a DataFrame column (aka Series)
+df.column.str[0:2]
+
+# Lower-case everything in a DataFrame column
+df.column_name = df.column_name.str.lower()
+
+# Get length of data in a DataFrame column
+df.column_name.str.len()
+
+# Sort dataframe by multiple columns
+df = df.sort(['col1','col2','col3'],ascending=[1,1,0])
+
+# Get top n for each group of columns in a sorted dataframe
+# (make sure dataframe is sorted first)
+top5 = df.groupby(['groupingcol1', 'groupingcol2']).head(5)
+
+# Grab DataFrame rows where specific column is null/notnull
+newdf = df[df['column'].isnull()]
+
+# Select from DataFrame using multiple keys of a hierarchical index
+df.xs(('index level 1 value','index level 2 value'), level=('level 1','level 2'))
+
+# Change all NaNs to None (useful before
+# loading to a db)
+df = df.where((pd.notnull(df)), None)
+
+# Get quick count of rows in a DataFrame
+len(df.index)
+
+# Pivot data (with flexibility about what what
+# becomes a column and what stays a row).
+# Syntax works on Pandas >= .14
+pd.pivot_table(
+  df,values='cell_value',
+  index=['col1', 'col2', 'col3'], #these stay as columns; will fail silently if any of these cols have null values
+  columns=['col4']) #data values in this column become their own column
+
+# Change data type of DataFrame column
+df.column_name = df.column_name.astype(np.int64)
+
+# Get rid of non-numeric values throughout a DataFrame:
+for col in refunds.columns.values:
+  refunds[col] = refunds[col].replace('[^0-9]+.-', '', regex=True)
+
+# Set DataFrame column values based on other column values (h/t: @mlevkov)
+df.loc[(df['column1'] == some_value) & (df['column2'] == some_other_value), ['column_to_change']] = new_value
+
+# Clean up missing values in multiple DataFrame columns
+df = df.fillna({
+    'col1': 'missing',
+    'col2': '99.999',
+    'col3': '999',
+    'col4': 'missing',
+    'col5': 'missing',
+    'col6': '99'
+})
+
+# Concatenate two DataFrame columns into a new, single column
+# (useful when dealing with composite keys, for example)
+df['newcol'] = df['col1'].map(str) + df['col2'].map(str)
+
+# Doing calculations with DataFrame columns that have missing values
+# In example below, swap in 0 for df['col1'] cells that contain null
+df['new_col'] = np.where(pd.isnull(df['col1']),0,df['col1']) + df['col2']
+
+# Split delimited values in a DataFrame column into two new columns
+df['new_col1'], df['new_col2'] = zip(*df['original_col'].apply(lambda x: x.split(': ', 1)))
+
+# Collapse hierarchical column indexes
+df.columns = df.columns.get_level_values(0)
+
+# Convert Django queryset to DataFrame
+qs = DjangoModelName.objects.all()
+q = qs.values()
+df = pd.DataFrame.from_records(q)
+
+# Create a DataFrame from a Python dictionary
+df = pd.DataFrame(list(a_dictionary.items()), columns = ['column1', 'column2'])
+
+# Get a report of all duplicate records in a dataframe, based on specific columns
+dupes = df[df.duplicated(['col1', 'col2', 'col3'], keep=False)]
+
+# Set up formatting so larger numbers aren't displayed in scientific notation (h/t @thecapacity)
+pd.set_option('display.float_format', lambda x: '%.3f' % x)
+
+
+
+
+
