@@ -1,3 +1,9 @@
+################## creating dummies anf deleting last varible to create n-1###########
+
+main_areas_dummies = pd.get_dummies(df4['main_areas'],prefix='Area').iloc[:,:-1]
+
+
+
 #########
 
 dataset.head(5).transpose()
