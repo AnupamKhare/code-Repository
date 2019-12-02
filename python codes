@@ -367,6 +367,28 @@ dupes = df[df.duplicated(['col1', 'col2', 'col3'], keep=False)]
 # Set up formatting so larger numbers aren't displayed in scientific notation (h/t @thecapacity)
 pd.set_option('display.float_format', lambda x: '%.3f' % x)
 
+##################### Text Preprocessing#####################
+rom nltk.tokenize import RegexpTokenizer
+from nltk.corpus import stopwords
+import nltk
+from nltk.corpus import wordnet
+from nltk.stem import WordNetLemmatizer
+nltk.download('wordnet')
+
+wordnet_lemmatizer = WordNetLemmatizer()
+tokenizer = RegexpTokenizer(r'[a-z]+')
+stop_words = set(stopwords.words('english'))
+
+def preprocess(document):
+    document = document.lower() # Convert to lowercase
+    words = tokenizer.tokenize(document) # Tokenize
+    words = [w for w in words if not w in stop_words] # Removing stopwords
+    # Lemmatizing
+    for pos in [wordnet.NOUN, wordnet.VERB, wordnet.ADJ, wordnet.ADV]:
+        words = [wordnet_lemmatizer.lemmatize(x, pos) for x in words]
+    return " ".join(words)
+    
+    
 
 
 
