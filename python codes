@@ -2,7 +2,20 @@
 
 main_areas_dummies = pd.get_dummies(df4['main_areas'],prefix='Area').iloc[:,:-1]
 
+######### Creating Varible using multiple ifelse#########
 
+df['City'] = pd.np.where(df.Location.str.contains("Pune"), "Pune",
+                pd.np.where(df.Location.str.contains("Bengaluru"), "Bangalore",
+                pd.np.where(df.Location.str.contains("Delhi"), "Delhi",
+                pd.np.where(df.Location.str.contains("Kolakata"), "Kolkata",
+                pd.np.where(df.Location.str.contains("Mumbai"), "Mumbai",
+                pd.np.where(df.Location.str.contains("Hyderabad"), "Hyderabad",
+                pd.np.where(df.Location.str.contains("Gurgaon"), "Gurgaon",
+                pd.np.where(df.Location.str.contains("Marathalli"), "Bangalore",
+                pd.np.where(df.Location.str.contains("Noida"), "Noida",
+                pd.np.where(df.Location.str.contains("Whitefield"), "Bangalore",
+                pd.np.where(df.Location.str.contains("Electronic City"), "Bangalore",
+                pd.np.where(df.Location.str.contains("BTM"), "Bangalore",'None'))))))))))))
 
 #########
 
@@ -389,6 +402,13 @@ def preprocess(document):
     return " ".join(words)
     
     
+############################# String Function
+
+###Extract only numbers
+
+df['Average_Cost']=df['Average_Cost'].astype(str).str.extract("([-+]?\d*\.\d+|[-+]?\d+)").astype(float)
+
+
 
 
 
