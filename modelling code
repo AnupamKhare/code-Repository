@@ -1,0 +1,21 @@
+######## Create sample weights
+
+import numpy as np
+
+def CreateBalancedSampleWeights(y_train, largest_class_weight_coef):
+    classes = y_train.unique()
+    classes.sort()
+    class_samples = np.bincount(y_train)
+    total_samples = class_samples.sum()
+    n_classes = len(class_samples)
+    weights = total_samples / (n_classes * class_samples * 1.0)
+    class_weight_dict = {key : value for (key, value) in zip(classes, weights)}
+    class_weight_dict[classes[1]] = class_weight_dict[classes[1]] * largest_class_weight_coef
+    sample_weights = [class_weight_dict[y] for y in y_train]
+
+    return sample_weights
+    
+train_sample_weight = CreateBalancedSampleWeights(label_train, largest_class_weight_coef=some_coef) ## some_coef is the occurence of majority class
+  
+  
+clf.fit(X_train, label_train, sample_weight=train_sample_weight, eval_metric=eval_metric)
