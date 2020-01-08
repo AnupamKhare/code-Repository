@@ -409,7 +409,28 @@ def preprocess(document):
 df['Average_Cost']=df['Average_Cost'].astype(str).str.extract("([-+]?\d*\.\d+|[-+]?\d+)").astype(float)
 
 
+#################convert string column to float by removing characters##################################
+
+def value_to_float(x):
+    if type(x) == float or type(x) == int:
+        return x
+    if 'K' in x:
+        if len(x) > 1:
+            return float(x.replace('K', '')) * 1000
+        return 1000.0
+    if 'M' in x:
+        if len(x) > 1:
+            return float(x.replace('M', '')) * 1000000
+        return 1000000.0
+    if 'B' in x:
+        return float(x.replace('B', '')) * 1000000000
+    return 0.0
+
+    df."Insert data series column" = df."Insert data series column" .apply(value_to_float)
 
 
+OR
+
+df['Val'].replace({'K': '*1e3', 'M': '*1e6'}, regex=True).map(pd.eval).astype(int)
 
 
