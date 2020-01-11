@@ -1,3 +1,14 @@
+####################### Creating a new column based on if-elif-else condition
+
+df.loc[(df['A'] == df['B']), 'C'] = 0
+df.loc[(df['A'] > df['B']), 'C'] = 1
+df.loc[(df['A'] < df['B']), 'C'] = -1
+
+if column A is equal to column B then create and set column C equal to 0.
+
+
+
+
 ################## creating dummies anf deleting last varible to create n-1###########
 
 main_areas_dummies = pd.get_dummies(df4['main_areas'],prefix='Area').iloc[:,:-1]
