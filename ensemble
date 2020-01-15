@@ -1,0 +1,13 @@
+#########regression with mlextend#########
+from mlxtend.regressor import StackingRegressor
+
+rand_forest_reg = RandomForestRegressor(n_estimators=100, max_depth = 10,random_state=1234)
+knn_reg=KNeighborsClassifier(n_neighbors=250,n_jobs=-1)
+#ext_tr=ExtraTreesRegressor(n_estimators=100, max_depth = 10)
+gb_reg = GradientBoostingRegressor(n_estimators=100, random_state=1234)
+
+stregr = StackingRegressor(regressors=[rand_forest_reg, knn_reg], meta_regressor=gb_reg, verbose=2)
+
+stregr.fit(x_train, y_train)
+stregr.predict(x_test)
+print("rmsE of Gradient Boosting is : ", rmse(stregr.predict(x_test), y_test))
