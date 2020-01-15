@@ -1,0 +1,137 @@
+########## Grid search classification with three models and Then ensembling to produce ensembled model##########
+
+################### grid Serch Cv Code for classification with three models###################
+
+# Cross validate model with Kfold stratified cross val
+from sklearn.model_selection import GridSearchCV, cross_val_score, StratifiedKFold
+kfold = StratifiedKFold(n_splits=10)
+
+from sklearn.ensemble import ExtraTreesClassifier
+ExtC = ExtraTreesClassifier()
+
+
+## Search grid for optimal parameters
+ex_param_grid = {"max_depth":  [n for n in range(9, 14)],  
+              "max_features": [1, 3, 10],
+              "min_samples_split": [n for n in range(4, 11)],
+              "min_samples_leaf": [n for n in range(2, 5)],
+              "bootstrap": [False],
+              "n_estimators" :[n for n in range(10, 60, 10)],
+              "criterion": ["gini"]}
+
+
+gsExtC = GridSearchCV(ExtC,param_grid = ex_param_grid, cv=kfold, scoring="accuracy", n_jobs= 4, verbose = 1)
+
+gsExtC.fit(X_train,y_train)
+
+ExtC_best = gsExtC.best_estimator_
+
+# Best score
+gsExtC.best_score_
+
+ # RFC Parameters tunning 
+from sklearn.ensemble import RandomForestClassifier
+
+### Random Forest #########
+RFC = RandomForestClassifier()
+
+
+
+## Search grid for optimal parameters
+rf_param_grid = {"max_depth":  [n for n in range(9, 14)],  
+              "max_features": [1, 3, 10],
+              "min_samples_split": [n for n in range(4, 11)],
+              "min_samples_leaf": [n for n in range(2, 5)],
+              "bootstrap": [False],
+              "n_estimators" :[n for n in range(10, 60, 10)],
+              "criterion": ["gini"]}
+
+
+gsRFC = GridSearchCV(RFC,param_grid = rf_param_grid, cv=kfold, scoring="accuracy", n_jobs= 4, verbose = 1)
+
+gsRFC.fit(X_train,y_train)
+
+RFC_best = gsRFC.best_estimator_
+
+# Best score
+gsRFC.best_score_
+
+
+#### Adaboost
+
+# Adaboost
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.tree import DecisionTreeClassifier
+
+DTC = DecisionTreeClassifier()
+
+adaDTC = AdaBoostClassifier(DTC, random_state=7)
+
+ada_param_grid = {"base_estimator__criterion" : ["gini", "entropy"],
+              "base_estimator__splitter" :   ["best", "random"],
+              "algorithm" : ["SAMME","SAMME.R"],
+              "n_estimators" :[30],
+              "learning_rate":  [0.0001, 0.001, 0.01, 0.1, 0.2, 0.3,1.5]}
+
+gsadaDTC = GridSearchCV(adaDTC,param_grid = ada_param_grid, cv=kfold, scoring="accuracy", n_jobs= 4, verbose = 1)
+
+gsadaDTC.fit(X_train,y_train)
+
+ada_best = gsadaDTC.best_estimator_
+
+gsadaDTC.best_score_
+
+##### SVC########
+
+### SVC classifier
+from sklearn.svm import SVC
+
+SVMC = SVC(probability=True)
+svc_param_grid = {'kernel': ['rbf'], 
+                  'gamma': [ 0.001, 0.01, 0.1, 1],
+                  'C': [1, 10, 50, 100,200,300, 1000]}
+
+gsSVMC = GridSearchCV(SVMC,param_grid = svc_param_grid, cv=kfold, scoring="accuracy", n_jobs= 4, verbose = 1)
+
+gsSVMC.fit(X_train,y_train)
+
+SVMC_best = gsSVMC.best_estimator_
+
+# Best score
+gsSVMC.best_score_
+
+##### GB cassifier
+
+# Gradient boosting tunning
+from sklearn.ensemble import GradientBoostingClassifier
+
+GBC = GradientBoostingClassifier()
+gb_param_grid = {'loss' : ["deviance"],
+              'n_estimators' : [n for n in range(10, 60, 10)],
+              'learning_rate': [0.1, 0.05, 0.01],
+              'max_depth':  [n for n in range(9, 14)],  
+              'min_samples_leaf': [n for n in range(2, 5)],
+              'max_features': [0.3, 0.1] 
+              }
+
+gsGBC = GridSearchCV(GBC,param_grid = gb_param_grid, cv=kfold, scoring="accuracy", n_jobs= 4, verbose = 1)
+
+gsGBC.fit(X_train,y_train)
+
+GBC_best = gsGBC.best_estimator_
+
+# Best score
+gsGBC.best_score_
+
+#### Ensembling#######
+
+from sklearn.ensemble import VotingClassifier
+
+votingC = VotingClassifier(estimators=[('rfc', RFC_best), ('extc', ExtC_best),('svm',SVMC_best),
+('gbc',GBC_best)], voting='soft', n_jobs=4)
+
+votingC = votingC.fit(X_train, y_train)
+test_Survived = pd.Series(votingC.predict(test), name="Survived")
+
+Submission = pd.concat([IDtest,test_Survived],axis=1)
+Submission.to_csv("submission.csv",index=False)
