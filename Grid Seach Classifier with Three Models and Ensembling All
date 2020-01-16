@@ -135,3 +135,54 @@ test_Survived = pd.Series(votingC.predict(test), name="Survived")
 
 Submission = pd.concat([IDtest,test_Survived],axis=1)
 Submission.to_csv("submission.csv",index=False)
+
+
+################### Bayesina Parameter Tuning###################################################################
+from skopt import BayesSearchCV
+# Bayesian Optimization
+opt = BayesSearchCV(
+    estimator = XGBRegressor(
+        n_jobs = -1,
+        tree_method='approx'
+    ),
+    search_spaces = {
+        'learning_rate': (0.01, 1.0, 'log-uniform'),
+        'min_child_weight': (0, 20),
+        'max_depth': (3, 5),
+#         'max_delta_step': (0, 20),
+        'subsample': (0.1, 1.0, 'uniform'),
+        'colsample_bytree': (0.1, 1.0, 'uniform'),
+        'colsample_bylevel': (0.1, 1.0, 'uniform'),
+        'reg_lambda': (1e-3, 1000, 'log-uniform'),
+        'reg_alpha': (1e-3, 1.0, 'log-uniform'),
+#         'gamma': (1e-9, 0.5, 'log-uniform'),
+        'base_score':((1e-4, 0.5, 'log-uniform'))
+    },    
+    scoring = scoring,
+    cv =3,
+    n_jobs = -1,
+    refit = True,
+    random_state = 42
+)
+
+opt.fit(X_train_scaled,y_train)
+
+opt.best_params_
+
+
+#Tuned Model
+xgb=XGBRegressor(random_state=51,n_jobs=-1,**opt.best_params_)
+xgb.fit(X_train_scaled,y_train)
+y_train_pred=xgb.predict(X_train_scaled)
+y_val_pred=xgb.predict(X_val_scaled)
+y_pred_xgb=np.append(y_train_pred,y_val_pred)
+print('Train RMSE:',np.sqrt(mean_squared_error(y_train,y_train_pred)))
+print('Test RMSE:',np.sqrt(mean_squared_error(y_val,y_val_pred)))
+
+
+#cross-val-score
+xgb=XGBRegressor(random_state=50,**opt.best_params_)
+scores=cross_val_score(xgb,X_train_scaled,y_train,n_jobs=-1,cv=3,scoring=scoring)
+print('RMSE: ',np.sqrt(-scores).mean())
+
+
