@@ -1,3 +1,12 @@
+
+########## . removing infinite value and replacing with nans###########
+
+train_df = train_df.replace([np.inf, -np.inf], np.nan)
+train_df = train_df.fillna(0)
+
+
+
+
 ####################### Creating a new column based on if-elif-else condition
 
 df.loc[(df['A'] == df['B']), 'C'] = 0
