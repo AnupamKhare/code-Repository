@@ -1,0 +1,135 @@
+# imports up here can be used to 
+import pandas as pd
+import numpy as np
+import string
+import pandas.core.algorithms as algos
+from pandas import Series
+import re
+import traceback
+import warnings
+warnings.filterwarnings("ignore")
+# The entry point function can contain up to two input arguments:
+#   Param<dataframe1>: a pandas.DataFrame
+#   Param<dataframe2>: a pandas.DataFrame
+def azureml_main(dataframe1 = None, dataframe2 = None):
+    import pandas as pd
+    import numpy as np
+    import string
+    import pandas.core.algorithms as algos
+    from pandas import Series
+    import re
+    import traceback
+    import warnings
+    warnings.filterwarnings("ignore")
+    
+    df = dataframe1 
+    df.individual_id = pd.to_numeric(df.individual_id, errors="coerce")
+    df.flag_dayworked = pd.to_numeric(df.flag_dayworked, errors="coerce")
+    df.consecutive_working_days = pd.to_numeric(df.consecutive_working_days, errors="coerce")
+    df.work_order_count = pd.to_numeric(df.work_order_count, errors="coerce")
+    df.id_zone = pd.to_numeric(df.id_zone, errors="coerce")
+    df.workface_time = pd.to_numeric(df.workface_time, errors="coerce")
+
+    # Function to treat missing values with mode
+    
+    def mode_function(data,column):
+        mode_value = data[column].mode()[0]
+        return data.groupby("individual_id")[column].apply(lambda x: x.fillna(x.value_counts().idxmax() if x.value_counts().max() >=1 else mode_value , inplace = False))
+
+    # Function to retrieve the main categories after cumulative calculation
+    def main_categories(data,column):
+    
+        cumsum = pd.DataFrame(data[column].value_counts()*100/len(data[column]))
+        total=0
+        j = 0
+        values = []
+        for i in cumsum.iloc[:,0]:
+            total += i    
+            if total <=95:
+                values.append(cumsum.index[j])
+                j += 1       
+        return values
+    # Replacing NULL string with np.NAN value in the entire dataset.
+    df = df.replace("NULL",np.NaN)
+    
+    # Selecting the data of the day worked only and valid workfacetime records
+    df2 = df.loc[(df["flag_dayworked"] == 1)&(df["workface_time"].notnull()) & (df["workface_time"]>0)]
+    df3 = df2.copy()
+    #print(df3)
+    
+    # Filling missing values of vendor with mode of individual id
+    df3["Vendor"] = mode_function(df3,"Vendor")
+    
+    # Filling missing values of role with mode of individual id
+    df3["Role"] = mode_function(df3,"Role")
+    
+    # Filling missing values of consecutive working days with mode of individual id
+    df3["consecutive_working_days"] = mode_function(df3,"consecutive_working_days")
+    
+    # Filling missing values of type_classdfr and skillset with mode of individual id
+    df3["type_classdfr"] = mode_function(df3,"type_classdfr")
+    df3["skillset"] = mode_function(df3,"skillset")
+    
+    # Filling the >100% workface time with 99% 
+    df3["workface_time"] =  [99 if x>99 else x for x in df3["workface_time"]]
+    
+    # Filling the >100% workface time with 99% 
+    df3["workface_time"] =  [99 if x>99 else x for x in df3["workface_time"]]
+    
+    # Finding total no of working days
+    no_of_days = df3.groupby("individual_id")["flag_dayworked"].sum().reset_index()
+    no_of_days = no_of_days.rename(columns ={"flag_dayworked":"total_working_days"})
+        
+    df4 = pd.merge(df3,no_of_days,on=["individual_id"],how="left") 
+    
+    #Segregating the SkillSet in to different Categories
+    df4["Novice"] = df4["skillset"].str.contains("Appr|trainee|Uncert").apply(lambda x: 1 if x is True else 0)
+    df4["Experienced"] = df4["skillset"].str.contains("Cert|Journey|Genl Fore").apply(lambda x: 1 if x is True else 0)
+    df4["Supervisor"] = df4["skillset"].str.contains("Super|Supv|Senior|Manager").apply(lambda x: 1 if x is True else 0)
+    
+    # Crane and Crane Operator, Scaffold and Scaffolder both are same. So merging them to single role
+    df4.Role[df4.Role == "Crane Operator"] = "Crane"
+    df4.Role[df4.Role == "Scaffold"] = "Scaffolder"
+        
+    #Deriving the new column for main contributing roles to our dataset
+    roles_contains = main_categories(df4,"Role")
+    df4["main_roles"] = df4["Role"].apply(lambda x: x if x in roles_contains else "other_roles")
+    
+    # Renaming the type_class of Unmapped with Unmapped_class
+    df4.type_classdfr[df4.type_classdfr == "Unmapped"] = "Unmapped_class"
+    
+    # Creating new column for Main Type_class, dummy variable creation
+    class_contains = main_categories(df4,"type_classdfr")
+    df4["main_type_class"] = df4["type_classdfr"].apply(lambda x: x if x in class_contains else "other_class" )
+    
+    # Deriving the new column for main contributing vendors to our dataset
+    vendor_contains = main_categories(df4,"Vendor")
+    df4["main_vendors"] = df4["Vendor"].apply(lambda x: x if x in vendor_contains else "other_vendors" )
+    
+    # Deriving Consecuting working days (>6 days) flag
+    df4["consecutive_days_flg"] = [1 if i > 6 else 0 for i in df4["consecutive_working_days"]]
+    
+    # work_order_count flag
+    df4["work_order_cnt_flag"] = [1 if i>1 else 0 for i in df4["work_order_count"]]
+    
+    #Converting workface_time from continuous to categorical variable
+    threshold = df4.workface_time.describe()["50%"]
+    df4["target"]=df4.workface_time.apply(lambda x: 1 if x >=threshold  else 0 )
+
+   
+      
+    # If a zip file is connected to the third input port is connected,
+    # it is unzipped under ".\Script Bundle". This directory is added
+    # to sys.path. Therefore, if your zip file contains a Python file
+    # mymodule.py you can import it using:
+    # import mymodule
+    
+    # Return value must be of a sequence of pandas.DataFrame
+    return df4,
+
+
+
+# Deriving the new column for main contributing vendors to our dataset
+    Id_contains = main_categories(df4,"id_zone")
+    df4["main_IdZones"] = df4["id_zone"].apply(lambda x: x if x in Id_contains else "other_Zones" )
+    
