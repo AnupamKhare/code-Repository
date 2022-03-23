@@ -455,7 +455,10 @@ df['Val'].replace({'K': '*1e3', 'M': '*1e6'}, regex=True).map(pd.eval).astype(in
 
 ####################### filter dataframe with various combination of 2 list ############
 concat_list = list(itertools.product(x_list, y_list))
+df_app=[]
     for i in concat_list:
         df=df[(df_model['host'].str.contains(i[0])) & (df['Disk_Instance'].str.contains(i[1]))]
+        df_app.append(df)
+    final_df=pd.concat(df_app)
 
 
