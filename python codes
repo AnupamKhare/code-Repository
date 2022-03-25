@@ -460,5 +460,12 @@ df_app=[]
         df=df[(df_model['host'].str.contains(i[0])) & (df['Disk_Instance'].str.contains(i[1]))]
         df_app.append(df)
     final_df=pd.concat(df_app)
+ 
+ ######################## Convert timestamp date to only date ##########################
+ 
+ date_cpu=[]
+    for i in df_month.to_timestamp():
+        x=i.strftime("%Y-%m-%d, %H:%M:%S").split(',')[0]
+        date_cpu.append(x)
 
 
