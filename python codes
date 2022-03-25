@@ -473,5 +473,20 @@ df_app=[]
     train_test_disk_util_Oracle.to_excel(writer,sheet_name='test_results',startrow=0, startcol=0, index=False)
     df_error.to_excel(writer,sheet_name='MAPE',startrow=0, startcol=0, index=False)
     writer.save()
+    
+ ##############. List to dataframe ################
+d = []
+for p in game.players.passing():
+    d.append(
+        {
+            'Player': p,
+            'Team': p.team,
+            'Passer Rating':  p.passer_rating()
+        }
+    )
+
+pd.DataFrame(d)
+
+
 
 
