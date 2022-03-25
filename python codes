@@ -467,5 +467,11 @@ df_app=[]
     for i in df_month.to_timestamp():
         x=i.strftime("%Y-%m-%d, %H:%M:%S").split(',')[0]
         date_cpu.append(x)
+ ################# Writingdataframes to Excel#####################
+ 
+ with pd.ExcelWriter('Error_Oracle.xlsx', engine='openpyxl') as writer:
+    train_test_disk_util_Oracle.to_excel(writer,sheet_name='test_results',startrow=0, startcol=0, index=False)
+    df_error.to_excel(writer,sheet_name='MAPE',startrow=0, startcol=0, index=False)
+    writer.save()
 
 
